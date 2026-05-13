@@ -3610,8 +3610,8 @@ dev = [
 
 [[package]]
 name = "tradingo-quant"
-version = "0.0.2.dev25+g9b46cb2b0"
-source = { git = "ssh://git@github.com/tradingo-libraries/tradingo-quant.git?branch=feature%2Fportfolio-construction-for-im#9b46cb2b031f32a4efe2d5e1de8d6155449457a8" }
+version = "0.0.2.dev26+g0b606ed83"
+source = { git = "ssh://git@github.com/tradingo-libraries/tradingo-quant.git?branch=feature%2Fportfolio-construction-for-im#0b606ed83efcdf43d6b30600b8c38b762be5c3f5" }
 dependencies = [
     { name = "numba" },
     { name = "numpy" },
