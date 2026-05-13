@@ -1,0 +1,75 @@
+[project]
+name = "tradingo-mcp"
+version = "0.1.0"
+description = "MCP server for Tradingo research workflows"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "tradingo",
+    "tradingo-quant",
+    "mcp[cli]>=1.0",
+    "httpx>=0.27",
+    "feedparser>=6.0",
+    "arcticdb>=4.0",
+    "pandas<3",
+    "numpy>=1.26",
+    "pyyaml>=6.0",
+    "jinja2>=3.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/tradingo_mcp"]
+
+[tool.pytest.ini_options]
+testpaths = ["test"]
+addopts = "--import-mode=importlib"
+
+[tool.isort]
+profile = "black"
+
+[tool.black]
+line-length = 88
+target-version = ["py312"]
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = [
+    "arcticdb",
+    "arcticdb.*",
+    "arcticdb_ext",
+    "arcticdb_ext.*",
+    "feedparser",
+    "tradingo",
+    "tradingo.*",
+    "tradingo_quant",
+    "tradingo_quant.*",
+    "yaml",
+]
+ignore_missing_imports = true
+
+[tool.uv.sources]
+tradingo = { git = "git+ssh://git@github.com/tradingo-libraries/tradingo.git", branch = "feature/in-memory" }
+# tradingo-quant = { index = "tradingo-libs" }
+tradingo-quant = { git = "git+ssh://git@github.com/tradingo-libraries/tradingo-quant.git", branch = "feature/portfolio-construction-for-im" }
+# tradingo-quant = { path = "../tradingo-quant/", editable = true }
+trading-ig = { git = "https://github.com/ig-python/trading-ig.git" }
+
+[dependency-groups]
+dev = [
+    "black",
+    "isort",
+    "mypy>=1.15.0",
+    "pandas-stubs",
+    "pytest>=8.0",
+    "pre-commit>=4.0",
+    "types-PyYAML",
+    "tradingo",
+    "tradingo-quant",
+]

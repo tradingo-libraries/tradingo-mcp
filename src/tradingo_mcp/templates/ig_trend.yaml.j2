@@ -1,0 +1,66 @@
+{# EWMAC + backtest on an IG universe. Edit params.speed1 / speed2 / gearing. #}
+# Research config — rendered by tradingo_mcp.config_io.render_template
+# run_id: {{ run_id }}
+
+# 1. Reuse the production price-sampling task by including its template.
+prices:
+  include: "file://{{ TP_TEMPLATES }}/instruments/ig-trading.yaml"
+  variables:
+    include: "file://{{ TP_CONFIG_HOME }}/universes/{{ universe_name | default('im-multi-asset-3') }}.yaml"
+    start_date: "{{ start_date | default('2022-01-01') }}"
+    end_date:   "{{ end_date | default('2024-12-31') }}"
+    samplingFunction: "tradingo.sampling.ig.sample_instrument"
+
+# 2. EWMAC signal.
+signals.{{ prefix }}trend.{{ universe_name | default('im-multi-asset-3') }}:
+  depends_on: ["sample.{{ universe_name | default('im-multi-asset-3') }}"]
+  function: "tradingo_quant.signals.signals.ewmac_signal"
+  symbols_in:
+    close: "prices/{{ universe_name | default('im-multi-asset-3') }}.mid.close"
+  symbols_out:
+    - "signals/trend.{{ universe_name | default('im-multi-asset-3') }}"
+  publish_args:
+    symbol_prefix: "{{ prefix }}"
+  params:
+    speed1: {{ speed1 | default(16) }}
+    speed2: {{ speed2 | default(64) }}
+
+# 3. Aggregate into a positions DataFrame.
+portfolio.{{ prefix }}unlimited:
+  depends_on: ["signals.{{ prefix }}trend.{{ universe_name | default('im-multi-asset-3') }}"]
+  function: "tradingo.portfolio.aggregate_portfolio"
+  symbols_in:
+    trend:
+      - "signals/{{ prefix }}trend.{{ universe_name | default('im-multi-asset-3') }}"
+    prices:
+      - "prices/{{ universe_name | default('im-multi-asset-3') }}.mid.close"
+  symbols_out:
+    - "portfolio/unlimited"
+  publish_args:
+    symbol_prefix: "{{ prefix }}position."
+  params:
+    model_weights: { trend: 1 }
+    gearing: {{ gearing | default(0.25) }}
+
+# 4. Backtest.
+backtest.research.{{ run_id }}:
+  depends_on: ["portfolio.{{ prefix }}unlimited"]
+  function: "tradingo.backtest.backtest"
+  symbols_in:
+    portfolio: "portfolio/{{ prefix }}position.unlimited"
+    bid_close: "prices/{{ universe_name | default('im-multi-asset-3') }}.bid.close"
+    ask_close: "prices/{{ universe_name | default('im-multi-asset-3') }}.ask.close"
+  symbols_out:
+    - "backtest/portfolio"
+    - "backtest/instrument.unrealised_pnl"
+    - "backtest/instrument.realised_pnl"
+    - "backtest/instrument.total_pnl"
+    - "backtest/instrument.net_position"
+    - "backtest/instrument.net_exposure"
+    - "backtest/instrument.net_investment"
+    - "backtest/instrument.avg_open_price"
+    - "backtest/instrument.stop_trade"
+  publish_args:
+    symbol_prefix: "{{ prefix }}"
+  params:
+    price_ffill_limit: {{ price_ffill_limit | default(5) }}
