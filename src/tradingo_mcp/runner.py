@@ -100,17 +100,30 @@ def execute(
     }
     _save_manifest(run_id, manifest)
 
+    _MCP_ONLY_VARS = {"TP_RESEARCH_CONFIG_HOME", "TP_RESEARCH_RUN_HOME"}
+    subprocess_env = {k: v for k, v in os.environ.items() if k not in _MCP_ONLY_VARS}
+
     t0 = time.monotonic()
+    if not wait:
+        # Fire-and-forget: write log to a file, return immediately.
+        log_path = _RESEARCH_RUN_HOME / f"{run_id}.log"
+        log_fh = open(log_path, "w")  # noqa: SIM115
+        subprocess.Popen(
+            cmd,
+            stdout=log_fh,
+            stderr=log_fh,
+            env=subprocess_env,
+        )
+        manifest.update({"status": "running", "log_path": str(log_path)})
+        _save_manifest(run_id, manifest)
+        return manifest
+
     try:
-        _MCP_ONLY_VARS = {"TP_RESEARCH_CONFIG_HOME", "TP_RESEARCH_RUN_HOME"}
-        subprocess_env = {
-            k: v for k, v in os.environ.items() if k not in _MCP_ONLY_VARS
-        }
         proc = subprocess.run(
             cmd,
             capture_output=True,
             text=True,
-            timeout=timeout_s if wait else None,
+            timeout=timeout_s,
             env=subprocess_env,
         )
         duration_s = time.monotonic() - t0
