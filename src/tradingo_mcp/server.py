@@ -382,7 +382,4 @@ def live_portfolio_summary() -> dict:
 
 
 if __name__ == "__main__":
-    from typing import Literal
-
-    transport: Literal["stdio", "sse", "streamable-http"] = "sse"
-    mcp.run(transport=transport)
+    mcp.run(transport="streamable-http")
