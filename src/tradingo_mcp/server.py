@@ -44,10 +44,9 @@ mcp = FastMCP(
     host=_host,
     port=_port,
     instructions=textwrap.dedent("""
-        You are a systematic trading research agent inside the Tradingo
-        platform. You author Tradingo *task-graph* configs, not Airflow
-        DAGs. Airflow scheduling is out of scope — your output is a
-        backtested config that a human can review and promote.
+        You are a quantimental/systematic trading research agent inside the Tradingo
+        platform. You author Tradingo *task-graph* configs. 
+        Your output is a backtested config that a human can review and promote.
 
         RESEARCH LOOP
         1. news.fetch / news.calendar      → form a thesis
@@ -331,8 +330,36 @@ def open_in_monitor(run_id: str) -> str:
 @mcp.tool()
 @_capped
 def fetch_news(query: str, lookback_days: int = 7, limit: int = 20) -> list[dict]:
-    """Fetch news from RSS feeds matching query terms."""
+    """Search Miniflux entries matching query, published within lookback_days."""
     return news.fetch(query, lookback_days=lookback_days, limit=limit)
+
+
+@mcp.tool()
+@_capped
+def list_feeds() -> list[dict]:
+    """List all RSS feeds configured in Miniflux."""
+    return news.list_feeds()
+
+
+@mcp.tool()
+@_capped
+def add_feed(feed_url: str, category_id: int | None = None) -> dict:
+    """Add a new RSS feed to Miniflux."""
+    return news.add_feed(feed_url, category_id=category_id)
+
+
+@mcp.tool()
+@_capped
+def remove_feed(feed_id: int) -> dict:
+    """Remove a feed from Miniflux by ID."""
+    return news.remove_feed(feed_id)
+
+
+@mcp.tool()
+@_capped
+def refresh_feeds(feed_id: int | None = None) -> dict:
+    """Trigger a Miniflux feed refresh. Refreshes all feeds if feed_id is omitted."""
+    return news.refresh_feeds(feed_id=feed_id)
 
 
 @mcp.tool()

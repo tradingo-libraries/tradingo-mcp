@@ -17,6 +17,7 @@ dependencies = [
     "jinja2>=3.0",
     "celery>=5.0",
     "redis>=4.0",
+    "miniflux>=0.0.19",
 ]
 
 [build-system]

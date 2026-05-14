@@ -1832,6 +1832,18 @@ wheels = [
 ]
 
 [[package]]
+name = "miniflux"
+version = "1.1.6"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "requests" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/1e/27/10c7504896b1d1f48dcd1bd12d724593ca37cbd6d0c7440ae8bc2fe62ee1/miniflux-1.1.6.tar.gz", hash = "sha256:e1e1157e34cf3cc0c68ffbff6a257b6a2f2f1893dd03e58bdc92ad898efefe88", size = 12480, upload-time = "2026-03-24T04:42:41.684Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e2/6c/a89a0dc2f4cf29cec5b891c93145f1cf5b9be5190f621201fe09822f44fc/miniflux-1.1.6-py3-none-any.whl", hash = "sha256:ec5a941ecc8a7534519a7fb1868e1718c1fff3b350ee5d6e119e060a36ac0026", size = 9367, upload-time = "2026-03-24T04:42:40.245Z" },
+]
+
+[[package]]
 name = "msgpack"
 version = "1.1.2"
 source = { registry = "https://pypi.org/simple" }
@@ -3664,6 +3676,7 @@ dependencies = [
     { name = "httpx" },
     { name = "jinja2" },
     { name = "mcp", extra = ["cli"] },
+    { name = "miniflux" },
     { name = "numpy" },
     { name = "pandas" },
     { name = "pyyaml" },
@@ -3693,6 +3706,7 @@ requires-dist = [
     { name = "httpx", specifier = ">=0.27" },
     { name = "jinja2", specifier = ">=3.0" },
     { name = "mcp", extras = ["cli"], specifier = ">=1.0" },
+    { name = "miniflux", specifier = ">=0.0.19" },
     { name = "numpy", specifier = ">=1.26" },
     { name = "pandas", specifier = "<3" },
     { name = "pyyaml", specifier = ">=6.0" },
