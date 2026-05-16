@@ -12,7 +12,7 @@ import arcticdb as adb
 from mcp.server.fastmcp import FastMCP
 
 from tradingo_mcp import arctic as _arctic
-from tradingo_mcp import config_io, news, results, risk, runner
+from tradingo_mcp import config_io, news, notifications, results, risk, runner
 
 MAX_BYTES = int(os.environ.get("TP_MCP_MAX_BYTES", str(2 * 1024 * 1024)))
 
@@ -406,6 +406,17 @@ def vol_target_size(
 def live_portfolio_summary() -> dict:
     """Aggregate latest net/gross exposure across live portfolios."""
     return risk.portfolio_summary()
+
+
+# ---------------------------------------------------------------------------
+# notification tools
+# ---------------------------------------------------------------------------
+
+
+@mcp.tool()
+def send_email(subject: str, body: str) -> dict:
+    """Send an email to the configured recipients (TP_MCP_EMAIL_RECIPIENTS, semicolon-separated)."""
+    return notifications.send_email(subject=subject, body=body)
 
 
 if __name__ == "__main__":
