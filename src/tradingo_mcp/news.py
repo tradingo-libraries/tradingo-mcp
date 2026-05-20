@@ -7,12 +7,12 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import httpx
+import miniflux
 
 _CALENDAR_URL = "https://nfs.faireconomy.media/ff_calendar_thisweek.json"
 
 
-def _client() -> Any:
-    import miniflux
+def _client() -> miniflux.Client:
 
     base_url = os.environ.get("MINIFLUX_BASE_URL", "http://miniflux:8084")
     api_key = os.environ.get("MINIFLUX_API_KEY")

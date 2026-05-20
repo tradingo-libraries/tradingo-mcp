@@ -11,6 +11,7 @@ from typing import Any
 import arcticdb as adb
 from mcp.server.fastmcp import FastMCP
 
+from tradingo_mcp import analytics as _analytics
 from tradingo_mcp import arctic as _arctic
 from tradingo_mcp import config_io, news, notifications, results, risk, runner
 
@@ -133,13 +134,132 @@ def fetch_bars(
     end: str,
     columns: list[str] | None = None,
     max_rows: int = 10_000,
+    frequency: str | None = None,
 ) -> str:
-    """Read a time slice. Returns split-orient JSON. Downsamples if > max_rows."""
-    df, resampled = _arctic.fetch_bars(library, symbol, start, end, columns, max_rows)
+    """Read a time slice. Returns split-orient JSON. Downsamples if > max_rows.
+
+    frequency: optional resample rule applied before the row cap.
+               "D" = daily last, "W" = weekly last, "ME" = month-end last.
+    """
+    df, resampled = _arctic.fetch_bars(
+        library, symbol, start, end, columns, max_rows, frequency
+    )
     payload = json.loads(df.to_json(orient="split", date_format="iso"))
     if resampled:
         payload["_resampled_to"] = max_rows
+    if frequency:
+        payload["_frequency"] = frequency
     return json.dumps(payload)
+
+
+@mcp.tool()
+@_capped
+def fetch_analytics(
+    library: str,
+    symbol: str,
+    start: str,
+    end: str,
+    kind: str = "vol",
+    method: str | None = None,
+    halflife: int | None = None,
+    window: int | None = None,
+    period: int = 1,
+    annualisation: int | None = None,
+    frequency: str | None = None,
+    columns: list[str] | None = None,
+) -> str:
+    """Compute a returns or volatility time series from price data.
+
+    kind:          "vol" (default) | "returns"
+    method:        None = outright scalar, "ewm" = exponentially weighted,
+                   "rolling" = rolling window, "expanding" = expanding window.
+    halflife:      periods; required when method="ewm".
+    window:        periods; required when method="rolling".
+    period:        look-back periods for returns computation (default=1).
+    annualisation: scaling factor — 252 (daily→annual), 52 (weekly→annual), 1 (none).
+                   Inferred from frequency if not supplied.
+    frequency:     optional resample of prices before computing ("D", "W", "ME").
+
+    Returns split-orient JSON of the resulting time series.
+    """
+    df = _analytics.fetch_analytics(
+        library,
+        symbol,
+        start,
+        end,
+        kind=kind,
+        method=method,
+        halflife=halflife,
+        window=window,
+        period=period,
+        annualisation=annualisation,
+        frequency=frequency,
+        columns=columns,
+    )
+    return df.to_json(orient="split", date_format="iso")
+
+
+@mcp.tool()
+@_capped
+def fetch_covariance(
+    library: str,
+    symbol: str,
+    start: str,
+    end: str,
+    annualisation: int | None = None,
+    frequency: str | None = "D",
+    columns: list[str] | None = None,
+) -> dict:
+    """Compute an insample annualised covariance matrix over the given period.
+
+    Returns a dict-of-dicts {instrument: {instrument: covariance}}.
+    frequency: resample prices before computing returns ("D"=daily, "W"=weekly).
+               Defaults to "D". Annualisation inferred from frequency if not supplied.
+    columns: optional list of instrument names to limit the matrix size.
+    """
+    return _analytics.fetch_covariance(
+        library,
+        symbol,
+        start,
+        end,
+        annualisation=annualisation,
+        frequency=frequency,
+        columns=columns,
+    )
+
+
+@mcp.tool()
+@_capped
+def describe_timeseries(
+    library: str,
+    symbol: str,
+    end: str,
+    lookback_days: int = 365,
+    factor_library: str | None = None,
+    factor_symbols: list[str] | None = None,
+    columns: list[str] | None = None,
+) -> dict:
+    """Summary statistics for a time series, resampled to daily.
+
+    Returns:
+      current_price, 52wk_high, 52wk_low, distance from those levels.
+      Period returns: 1d, 5d, 20d, 60d, 252d.
+      annualised_vol_ewm36: EWM volatility (halflife=36 days), annualised.
+      sharpe_ratio: annualised Sharpe over the lookback window.
+      max_drawdown: peak-to-trough drawdown.
+      betas: per-factor insample OLS beta, if factor_library and factor_symbols given.
+
+    columns: optional filter — pass instrument names to limit output size.
+    """
+    return _analytics.describe_timeseries(
+        library,
+        symbol,
+        end,
+        lookback_days=lookback_days,
+        factor_library=factor_library,
+        factor_symbols=factor_symbols,
+        columns=columns,
+    )
 
 
 @mcp.tool()

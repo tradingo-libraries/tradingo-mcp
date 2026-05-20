@@ -79,14 +79,21 @@ def fetch_bars(
     end: str,
     columns: list[str] | None = None,
     max_rows: int = 10_000,
+    frequency: str | None = None,
 ) -> tuple[pd.DataFrame, bool]:
-    """Read a time slice. Returns (df, resampled) where resampled=True if downsampled."""
+    """Read a time slice. Returns (df, resampled) where resampled=True if downsampled.
+
+    frequency: optional pandas resample rule applied before the row cap
+               e.g. "D" (daily), "W" (weekly), "ME" (month-end).
+    """
     ac = arctic_client()
     lib = ac.get_library(library)
     date_range = (pd.Timestamp(start), pd.Timestamp(end))
     item = lib.read(symbol, date_range=date_range, columns=columns, lazy=False)
     assert isinstance(item, adb.VersionedItem)
     df = item.data
+    if frequency:
+        df = df.resample(frequency).last().dropna(how="all")
     resampled = False
     if len(df) > max_rows:
         step = max(1, len(df) // max_rows)
