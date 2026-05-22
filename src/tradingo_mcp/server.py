@@ -13,7 +13,15 @@ from mcp.server.fastmcp import FastMCP
 
 from tradingo_mcp import analytics as _analytics
 from tradingo_mcp import arctic as _arctic
-from tradingo_mcp import config_io, news, notifications, results, risk, runner
+from tradingo_mcp import (
+    config_io,
+    exec_python,
+    news,
+    notifications,
+    results,
+    risk,
+    runner,
+)
 
 MAX_BYTES = int(os.environ.get("TP_MCP_MAX_BYTES", str(2 * 1024 * 1024)))
 
@@ -537,6 +545,38 @@ def live_portfolio_summary() -> dict:
 def send_email(subject: str, body: str) -> dict:
     """Send an email to the configured recipients (TP_MCP_EMAIL_RECIPIENTS, semicolon-separated)."""
     return notifications.send_email(subject=subject, body=body)
+
+
+# ---------------------------------------------------------------------------
+# python exec tool
+# ---------------------------------------------------------------------------
+
+
+@mcp.tool()
+def run_python(code: str, timeout: int = 60) -> dict:
+    """Execute an arbitrary Python snippet and return its output.
+
+    The snippet runs in a namespace that already has:
+      - ``pd``           (pandas)
+      - ``np``           (numpy)
+      - ``arctic_client`` (factory → configured ArcticDB instance)
+
+    Use ``print()`` to produce visible output; the return value of the last
+    expression is NOT captured automatically — assign it and print it.
+
+    Returns a dict with keys:
+      ``stdout``  – everything written to stdout
+      ``stderr``  – everything written to stderr
+      ``error``   – traceback string (only present on exception or timeout)
+
+    Example:
+        code = '''
+        ac = arctic_client()
+        lib = ac.get_library("prices")
+        print(lib.list_symbols()[:5])
+        '''
+    """
+    return exec_python.run_script(code, timeout=timeout)
 
 
 if __name__ == "__main__":
