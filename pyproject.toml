@@ -60,7 +60,7 @@ ignore_missing_imports = true
 [tool.uv.sources]
 tradingo = { git = "git+ssh://git@github.com/tradingo-libraries/tradingo.git", branch = "feature/in-memory" }
 # tradingo-quant = { index = "tradingo-libs" }
-tradingo-quant = { git = "git+ssh://git@github.com/tradingo-libraries/tradingo-quant.git", branch = "feature/portfolio-construction-for-im" }
+tradingo-quant = { git = "git+ssh://git@github.com/tradingo-libraries/tradingo-quant.git", branch = "fx-stat-arb" }
 # tradingo-quant = { path = "../tradingo-quant/", editable = true }
 trading-ig = { git = "https://github.com/ig-python/trading-ig.git" }
 
