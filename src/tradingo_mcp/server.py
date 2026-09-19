@@ -1,4 +1,4 @@
-"""FastMCP app, tool registration, response-size cap."""
+"""MCPServer app, tool registration, response-size cap."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ import textwrap
 from typing import Any
 
 import arcticdb as adb
-from mcp.server.fastmcp import FastMCP
+from mcp.server import MCPServer
 
 from tradingo_mcp import analytics as _analytics
 from tradingo_mcp import arctic as _arctic
@@ -45,13 +45,8 @@ def _capped(fn):  # type: ignore[no-untyped-def]
     return wrapper
 
 
-_host = os.environ.get("MCP_HOST", "0.0.0.0")
-_port = int(os.environ.get("MCP_PORT", "8765"))
-
-mcp = FastMCP(
+mcp = MCPServer(
     name="tradingo-research",
-    host=_host,
-    port=_port,
     instructions=textwrap.dedent("""
         You are a quantimental/systematic trading research agent inside the Tradingo
         platform. You author Tradingo *task-graph* configs. 
@@ -579,5 +574,8 @@ def run_python(code: str, timeout: int = 60) -> dict:
     return exec_python.run_script(code, timeout=timeout)
 
 
+_host = os.environ.get("MCP_HOST", "0.0.0.0")
+_port = int(os.environ.get("MCP_PORT", "8765"))
+
 if __name__ == "__main__":
-    mcp.run(transport="streamable-http")
+    mcp.run(transport="streamable-http", host=_host, port=_port)
