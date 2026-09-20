@@ -7,7 +7,7 @@ requires-python = ">=3.14"
 dependencies = [
     "tradingo",
     "tradingo-quant",
-    "mcp[cli]>=1.0",
+    "mcp[cli]>=1.0,<2",
     "httpx>=0.27",
     "feedparser>=6.0",
     "arcticdb>=4.0",
