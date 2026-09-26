@@ -146,3 +146,41 @@ signals.{prefix}trend:
     result = validate_config(run_id, yaml_text)
     assert result["valid"] is False
     assert any("backtest" in e for e in result["errors"])
+
+
+def test_backtest_must_write_portfolio():
+    run_id = "test_20240101T1200_nop1"
+    prefix = f"research.{run_id}."
+    yaml_text = f"""
+backtest.research.{run_id}:
+  depends_on: []
+  function: "tradingo.backtest.backtest"
+  symbols_in: {{}}
+  symbols_out:
+    - "backtest/instrument.total_pnl"
+  publish_args:
+    symbol_prefix: "{prefix}"
+  params: {{}}
+"""
+    result = validate_config(run_id, yaml_text)
+    assert result["valid"] is False
+    assert any("backtest/portfolio" in e for e in result["errors"])
+
+
+def test_backtest_task_must_use_backtest_function():
+    run_id = "test_20240101T1200_nof1"
+    prefix = f"research.{run_id}."
+    yaml_text = f"""
+backtest.research.{run_id}:
+  depends_on: []
+  function: "tradingo_quant.signals.signals.ewmac_signal"
+  symbols_in: {{}}
+  symbols_out:
+    - "backtest/portfolio"
+  publish_args:
+    symbol_prefix: "{prefix}"
+  params: {{}}
+"""
+    result = validate_config(run_id, yaml_text)
+    assert result["valid"] is False
+    assert any("tradingo.backtest.backtest" in e for e in result["errors"])

@@ -102,6 +102,7 @@ def validate_config(run_id: str, yaml_text: str) -> dict[str, Any]:
     leaves: list[str] = []
     all_task_names: set[str] = set()
     dep_targets: set[str] = set()
+    backtest_prefix = f"backtest.research.{run_id}"
 
     for key, val in config.items():
         if not isinstance(val, dict):
@@ -138,6 +139,20 @@ def validate_config(run_id: str, yaml_text: str) -> dict[str, Any]:
                     " literal 'research.' — use symbol_prefix instead"
                 )
 
+        # Backtest output must land under research.<run_id>. — get_metrics
+        # reads research.<run_id>.portfolio and friends.
+        if key.startswith(backtest_prefix):
+            if func != "tradingo.backtest.backtest":
+                errors.append(
+                    f"Task '{key}': backtest task must use function"
+                    " 'tradingo.backtest.backtest'"
+                )
+            if "backtest/portfolio" not in val.get("symbols_out", []):
+                errors.append(
+                    f"Task '{key}': symbols_out must include 'backtest/portfolio'"
+                    f" so results are written to 'research.{run_id}.portfolio'"
+                )
+
         for dep in val.get("depends_on", []):
             dep_targets.add(dep)
 
@@ -145,13 +160,9 @@ def validate_config(run_id: str, yaml_text: str) -> dict[str, Any]:
     leaves = [t for t in all_task_names if t not in dep_targets]
 
     # 3. Require at least one backtest leaf
-    backtest_leaves = [
-        leaf for leaf in leaves if leaf.startswith(f"backtest.research.{run_id}")
-    ]
+    backtest_leaves = [leaf for leaf in leaves if leaf.startswith(backtest_prefix)]
     if not backtest_leaves:
-        errors.append(
-            f"No backtest task found starting with 'backtest.research.{run_id}'"
-        )
+        errors.append(f"No backtest task found starting with '{backtest_prefix}'")
 
     return {
         "valid": len(errors) == 0,
