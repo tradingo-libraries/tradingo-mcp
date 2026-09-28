@@ -3380,8 +3380,8 @@ wheels = [
 
 [[package]]
 name = "tradingo"
-version = "0.0.40.dev65+g7ece3f355"
-source = { git = "ssh://git@github.com/tradingo-libraries/tradingo.git?branch=feature%2Fin-memory#7ece3f355d6a746f30e417a6ed6600a8c7178b64" }
+version = "0.1.dev468+gc8aae5e63"
+source = { git = "ssh://git@github.com/tradingo-libraries/tradingo.git?branch=feature%2Fin-memory#c8aae5e63ebfc3ee6c260f8ec9760b500a2a8f43" }
 dependencies = [
     { name = "arcticdb" },
     { name = "dukascopy-python" },

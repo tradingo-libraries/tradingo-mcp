@@ -539,9 +539,13 @@ def live_portfolio_summary() -> dict:
 
 
 @mcp.tool()
-def send_email(subject: str, body: str) -> dict:
-    """Send an email to the configured recipients (TP_MCP_EMAIL_RECIPIENTS, semicolon-separated)."""
-    return notifications.send_email(subject=subject, body=body)
+def send_email(subject: str, body: str, attachments: list[str] | None = None) -> dict:
+    """Send an email to the configured recipients (TP_MCP_EMAIL_RECIPIENTS, semicolon-separated).
+
+    body is HTML. attachments is an optional list of file paths (e.g. figures,
+    reports) to attach; missing paths are silently skipped.
+    """
+    return notifications.send_email(subject=subject, body=body, attachments=attachments)
 
 
 # ---------------------------------------------------------------------------

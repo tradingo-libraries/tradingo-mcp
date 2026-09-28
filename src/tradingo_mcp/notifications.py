@@ -8,10 +8,12 @@ from tradingo.notifications.email import send_email as _send_email
 from tradingo.settings import SMTPConfig
 
 
-def send_email(subject: str, body: str) -> dict:
+def send_email(subject: str, body: str, attachments: list[str] | None = None) -> dict:
     """Send an email to TP_MCP_EMAIL_RECIPIENTS (semicolon-separated list).
 
     Initialises SMTP env vars via SMTPConfig.from_env().to_env() before sending.
+    ``attachments`` is an optional list of file paths (e.g. figures, reports) to
+    attach; missing paths are silently skipped.
     """
     SMTPConfig.from_env().to_env()
 
@@ -21,6 +23,8 @@ def send_email(subject: str, body: str) -> dict:
         raise ValueError("TP_MCP_EMAIL_RECIPIENTS is not set or empty")
 
     for recipient in recipients:
-        _send_email(body=body, subject=subject, recipient=recipient)
+        _send_email(
+            body=body, subject=subject, recipient=recipient, attachments=attachments
+        )
 
-    return {"sent_to": recipients, "subject": subject}
+    return {"sent_to": recipients, "subject": subject, "attachments": attachments or []}
