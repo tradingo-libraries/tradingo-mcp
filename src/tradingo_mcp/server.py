@@ -18,6 +18,7 @@ from tradingo_mcp import (
     exec_python,
     news,
     notifications,
+    research_bank,
     results,
     risk,
     runner,
@@ -445,6 +446,133 @@ def compare(run_ids: list[str], metrics: list[str] | None = None) -> str:
 def open_in_monitor(run_id: str) -> str:
     """Return Monitor URL pre-filtered to this portfolio."""
     return results.open_in_monitor(run_id)
+
+
+# ---------------------------------------------------------------------------
+# research bank tools (read-only; index of every agent-research run)
+# ---------------------------------------------------------------------------
+# Item keys are "<run_id>/<item_id>". Graph node ids are "<type>:<value>", e.g. instrument:EURUSD,
+# mechanism:event-drift, data_source:dukascopy-5min, cause:below-cost-floor, theme:<slug>, item:<key>,
+# lesson:<id>. Wherever a node is expected, a bare value ("EURUSD", "below-cost-floor") also works.
+
+
+@mcp.tool()
+@_capped
+def research_search(
+    query: str = "",
+    about: list[str] | None = None,
+    theme: str | None = None,
+    verdict: str | None = None,
+    decision: str | None = None,
+    since: str | None = None,
+    limit: int = 20,
+) -> list[dict]:
+    """Full-text search over past research items (thesis, findings, reviews, tags), newest-relevant first.
+
+    about: graph nodes every result must link to, e.g. ["instrument:EURUSD", "cause:below-cost-floor"].
+    verdict: promising | no-edge | inconclusive. decision: promote | kill | continue. since: YYYY-MM-DD.
+    Empty query lists items matching the filters, newest first.
+    """
+    return research_bank.search(
+        query,
+        about=about,
+        theme=theme,
+        verdict=verdict,
+        decision=decision,
+        since=since,
+        limit=limit,
+    )
+
+
+@mcp.tool()
+@_capped
+def research_similar(
+    thesis: str, limit: int = 10, exclude: str | None = None
+) -> list[dict]:
+    """Past items most similar to a thesis (BM25 over thesis/findings/review/tags). Use before proposing
+    or testing an idea; ``exclude`` drops one item key (e.g. the item being researched).
+    """
+    return research_bank.similar(thesis, limit=limit, exclude=exclude)
+
+
+@mcp.tool()
+@_capped
+def research_item(
+    key: str, include_findings: bool = True, max_chars: int = 20000
+) -> dict:
+    """One item: catalog row (normalised metrics, tags, decision, DSR), findings.md text and every graph link
+    in and out. ``key`` is "<run_id>/<item_id>" or a unique item_id."""
+    return research_bank.get_item(
+        key, include_findings=include_findings, max_chars=max_chars
+    )
+
+
+@mcp.tool()
+@_capped
+def research_lessons(
+    query: str = "",
+    about: list[str] | None = None,
+    type: str | None = None,
+    status: str = "active",
+    limit: int = 50,
+) -> list[dict]:
+    """Lessons ledger: generalised findings with evidence. type: market | data | method | tooling.
+    about: nodes the lesson concerns (directly, or via its evidence items), e.g. ["data_source:dukascopy-5min"].
+    status: active | superseded | retired | any."""
+    return research_bank.lessons(
+        query, about=about, type=type, status=status, limit=limit
+    )
+
+
+@mcp.tool()
+@_capped
+def research_neighbours(
+    node: str,
+    edge_types: list[str] | None = None,
+    direction: str = "both",
+    depth: int = 1,
+    limit: int = 200,
+) -> dict:
+    """Walk the research knowledge graph from a node (depth 1-3). Edge types: in_run, in_theme, tests, uses,
+    continued_from, killed_because, variant_of, related_to, contradicts, supported_by, contradicted_by,
+    supersedes, about, pnl_corr. E.g. node="cause:below-cost-floor", direction="in" lists every item killed
+    by costs; node="instrument:XAUUSD", depth=2 shows what was tested on gold and what it connects to.
+    """
+    return research_bank.neighbours(
+        node, edge_types=edge_types, direction=direction, depth=depth, limit=limit
+    )
+
+
+@mcp.tool()
+@_capped
+def research_lineage(key: str) -> dict:
+    """Continuation chain of an item (ancestors -> item -> descendants) plus variant/related/contradicting
+    items and PnL-correlated items."""
+    return research_bank.lineage(key)
+
+
+@mcp.tool()
+@_capped
+def research_theme(slug: str | None = None) -> dict | list[dict]:
+    """A theme's stats (items, trial count, null-max Sharpe a new variant must beat), its items, lessons and
+    the latest state-of-the-theme note. No slug lists all themes."""
+    return research_bank.theme(slug)
+
+
+@mcp.tool()
+@_capped
+def research_untested(target: str, dimension: str = "mechanism") -> dict:
+    """Gaps: taxonomy values of ``dimension`` (mechanism | trigger | horizon | asset_class | data_source |
+    method) never tested on items linked to ``target`` (e.g. "EURUSD", "asset_class:commodity").
+    """
+    return research_bank.untested(target, dimension=dimension)
+
+
+@mcp.tool()
+@_capped
+def research_contradictions() -> dict:
+    """Lessons that contradict each other, lessons with counter-evidence, and items that contradict items."""
+    return research_bank.contradictions()
 
 
 # ---------------------------------------------------------------------------
