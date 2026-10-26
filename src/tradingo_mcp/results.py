@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import os
+import urllib.parse
 from typing import Any
 
 from tradingo_mcp.arctic import arctic_client
@@ -79,5 +81,12 @@ def compare(run_ids: list[str], metrics: list[str] | None = None) -> str:
 
 
 def open_in_monitor(run_id: str) -> str:
-    monitor_host = "monitor"
-    return f"http://{monitor_host}:8082/?portfolio=research.{run_id}"
+    """Shareable tradingo-monitor URL showing this run's backtest, full history.
+
+    The monitor keeps its whole view in the query string: ``s`` is the
+    strategy list (``name~colour-slot``) and ``tf`` the timeframe preset.
+    ``TP_MONITOR_URL`` overrides the base (default ``http://monitor:8082``).
+    """
+    base = os.environ.get("TP_MONITOR_URL", "http://monitor:8082").rstrip("/")
+    strategy = urllib.parse.quote(f"research.{run_id}", safe="")
+    return f"{base}/?s={strategy}~0&tf=ALL&f=auto"
