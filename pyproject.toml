@@ -18,6 +18,7 @@ dependencies = [
     "celery>=5.0",
     "redis>=4.0",
     "miniflux>=0.0.19",
+    "research-catalog",
 ]
 
 [build-system]
@@ -62,6 +63,7 @@ tradingo = { git = "git+ssh://git@github.com/tradingo-libraries/tradingo.git", b
 # tradingo-quant = { index = "tradingo-libs" }
 tradingo-quant = { git = "git+ssh://git@github.com/tradingo-libraries/tradingo-quant.git", branch = "fx-stat-arb" }
 # tradingo-quant = { path = "../tradingo-quant/", editable = true }
+research-catalog = { git = "git+ssh://git@github.com/tradingo-libraries/research-catalog.git", branch = "main" }
 trading-ig = { git = "https://github.com/ig-python/trading-ig.git" }
 
 [dependency-groups]

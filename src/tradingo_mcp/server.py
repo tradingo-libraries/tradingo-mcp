@@ -10,6 +10,7 @@ from typing import Any
 
 import arcticdb as adb
 from mcp.server import FastMCP
+from research_catalog import tools as literature
 
 from tradingo_mcp import analytics as _analytics
 from tradingo_mcp import arctic as _arctic
@@ -706,6 +707,65 @@ def run_python(code: str, timeout: int = 60) -> dict:
         '''
     """
     return exec_python.run_script(code, timeout=timeout)
+
+
+# ---------------------------------------------------------------------------
+# literature catalogue tools (read-only; research-catalog, needs RC_DB_URL with the reader role)
+# ---------------------------------------------------------------------------
+
+
+@mcp.tool()
+@_capped
+def literature_search(
+    query: str = "",
+    mechanism: list[str] | None = None,
+    asset_class: list[str] | None = None,
+    method: list[str] | None = None,
+    horizon: list[str] | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+    full_text_only: bool = False,
+    limit: int = 10,
+) -> dict:
+    """Search the systematic-investing literature catalogue (academic papers, not past Tradingo research).
+
+    query: free text; supports "quoted phrases" and -excluded terms. Empty lists papers matching the
+    filters, newest first.
+    mechanism / asset_class / method / horizon: filters. Catalogue values (e.g. time_series_momentum,
+    commodities, daily) and research-bank values (e.g. momentum, commodity) both work; an unknown value
+    returns the valid list. date_from / date_to: YYYY-MM-DD.
+    Only relevant and borderline papers are searched. Returns total plus compact hits; use
+    literature_paper(id) for the abstract, locations and documents.
+    """
+    return literature.literature_search(
+        query,
+        mechanism=mechanism,
+        asset_class=asset_class,
+        method=method,
+        horizon=horizon,
+        date_from=date_from,
+        date_to=date_to,
+        full_text_only=full_text_only,
+        limit=limit,
+    )
+
+
+@mcp.tool()
+@_capped
+def literature_paper(ref: str) -> dict:
+    """Full record for one paper: abstract, facets, locations, archived documents.
+
+    ref: the id from a search result, ``doi:10.…``, ``arxiv:2401.01234`` or an OpenAlex id. A paper
+    merged into another resolves to the surviving record (see merged_from).
+    """
+    return literature.literature_paper(ref)
+
+
+@mcp.tool()
+@_capped
+def literature_stats() -> dict:
+    """Literature catalogue size by relevance, archived documents, pipeline backlog, last discovery."""
+    return literature.literature_stats()
 
 
 if __name__ == "__main__":
