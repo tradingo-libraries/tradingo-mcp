@@ -16,6 +16,7 @@ from tradingo_mcp import analytics as _analytics
 from tradingo_mcp import arctic as _arctic
 from tradingo_mcp import (
     config_io,
+    dag_io,
     exec_python,
     news,
     notifications,
@@ -68,6 +69,14 @@ mcp = FastMCP(
         7. run.execute(run_id, ...)        → dispatches to Celery (the cluster)
         8. results.get_metrics(run_id)     → Sharpe, drawdown, hit rate, turnover
         9. iterate; results.compare(run_ids) when you have multiple
+
+        SCHEDULING (sampling jobs and signal configs)
+        write_dag(dag_id, config_yaml, schedule, variables, params) turns a tradingo config
+        into an Airflow DAG named promoted_*. list_dags / read_dag / delete_dag manage them.
+        `params` are per-run Airflow params (e.g. {"TP_INCLUDE_INSTRUMENTS": false}) usable as
+        Jinja variables in the config and in `enabled:`; override them in the conf of a manual
+        run (airflow trigger_dag_run). Every promoted DAG also takes `data_interval_start`
+        (YYYY-MM-DD) to hardcode the sampling window start for a backfill-sized run.
     """),
 )
 
@@ -359,6 +368,66 @@ def delete_research_config(run_id: str, also_delete_symbols: bool = True) -> dic
     if also_delete_symbols:
         deleted_symbols = _arctic.delete_research_symbols(run_id)
     return {"config_deleted": deleted, "deleted_symbols": deleted_symbols}
+
+
+# ---------------------------------------------------------------------------
+# dag tools
+# ---------------------------------------------------------------------------
+
+
+@mcp.tool()
+@_capped
+def write_dag(
+    dag_id: str,
+    config_yaml: str,
+    schedule: str | None = None,
+    variables: dict | None = None,
+    params: dict | None = None,
+    description: str = "",
+    start_date: str = "2026-01-01",
+) -> dict:
+    """Create or replace an Airflow DAG from a tradingo config. dag_id must be promoted_<name>.
+
+    schedule: None (manual only), @once/@hourly/@daily/@weekly/@monthly or a 5-field cron
+    (at most every 5 minutes). The DAG appears in Airflow within about a minute, paused.
+    variables: fixed Jinja variables, substituted when the DAG is parsed (can shape the graph).
+    params: {NAME: default} Airflow params, resolved per run via {{ NAME }} in the config; a
+    manual run overrides them in its conf. Use them for strings and for `enabled: {{ NAME }}`
+    (e.g. `enabled: {{ TP_INCLUDE_INSTRUMENTS }}` with params {"TP_INCLUDE_INSTRUMENTS": false}).
+    {{ data_interval_start }} and {{ data_interval_end }} are always available; every DAG also
+    accepts a `data_interval_start` conf value that overrides the start. Functions must be on the
+    allowlist (tradingo.sampling.*, tradingo_quant.signals.* ...); `include` is not allowed.
+    """
+    return dag_io.write_dag(
+        dag_id,
+        config_yaml,
+        schedule=schedule,
+        variables=variables,
+        params=params,
+        description=description,
+        start_date=start_date,
+    )
+
+
+@mcp.tool()
+@_capped
+def list_dags() -> list[dict]:
+    """List the DAGs written by write_dag (no config body; use read_dag)."""
+    return dag_io.list_dags()
+
+
+@mcp.tool()
+@_capped
+def read_dag(dag_id: str) -> dict:
+    """Read a promoted DAG spec, including its config YAML."""
+    return dag_io.read_dag(dag_id)
+
+
+@mcp.tool()
+@_capped
+def delete_dag(dag_id: str) -> dict:
+    """Delete a promoted DAG spec; Airflow removes the DAG at its next parse. Data is kept."""
+    return {"deleted": dag_io.delete_dag(dag_id)}
 
 
 # ---------------------------------------------------------------------------
