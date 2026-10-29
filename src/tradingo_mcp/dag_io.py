@@ -55,7 +55,12 @@ _DAG_HOME_ENV = "TP_RESEARCH_CONFIG_HOME"
 
 
 def dag_home() -> pathlib.Path:
-    """Directory holding the specs; ``dags/`` under the research config volume."""
+    """Directory holding the specs: ``$PROMOTED_DAG_HOME`` (Airflow side), else ``dags/`` under
+    the research config volume. Airflow gets its own variable because ``TP_*`` names that
+    tradingo's settings don't know trigger a warning on every DAG parse."""
+    override = os.environ.get("PROMOTED_DAG_HOME")
+    if override:
+        return pathlib.Path(override)
     root = pathlib.Path(os.environ.get(_DAG_HOME_ENV, "/opt/research/configs"))
     return root / "dags"
 
