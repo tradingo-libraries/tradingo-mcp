@@ -151,7 +151,21 @@ def render_config(spec: dict[str, Any]) -> tuple[dict[str, Any], dict[str, str]]
         raise ValueError("config must render to a YAML mapping")
     if _contains_key(config, "include"):
         raise ValueError("'include' is not allowed in a promoted config")
+    _default_publish_args(config)
     return resolve_runtime(config)
+
+
+def _default_publish_args(config: dict[str, Any]) -> None:
+    """Make every promoted task conform its output to the stored symbol schema.
+
+    A task can opt out with ``publish_args: {coerce_columns: false}``.
+    """
+    from tradingo.dag import collect_task_configs
+
+    for task in collect_task_configs(config).values():
+        if "stage" in task:
+            continue
+        task.setdefault("publish_args", {}).setdefault("coerce_columns", True)
 
 
 def _cron_errors(schedule: str) -> list[str]:
