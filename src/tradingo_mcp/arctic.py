@@ -8,9 +8,22 @@ import re
 import arcticdb as adb
 import pandas as pd
 
+from tradingo_mcp.telemetry import span
+
 _ARCTIC: adb.Arctic | None = None
 
 RESEARCH_PREFIX = "research."
+
+
+def _attrs(operation: str, library: str, symbol: str | None = None) -> dict[str, str]:
+    attrs = {
+        "db.system": "arcticdb",
+        "db.operation": operation,
+        "arcticdb.library": library,
+    }
+    if symbol is not None:
+        attrs["arcticdb.symbol"] = symbol
+    return attrs
 
 
 def arctic_client() -> adb.Arctic:
@@ -52,13 +65,15 @@ def list_symbols(library: str, regex: str = "") -> list[str]:
     if library not in ac.list_libraries():
         return []
     lib = ac.get_library(library)
-    return lib.list_symbols(regex=regex) if regex else lib.list_symbols()
+    with span("arcticdb.list_symbols", **_attrs("list_symbols", library)):
+        return lib.list_symbols(regex=regex) if regex else lib.list_symbols()
 
 
 def describe_symbol(library: str, symbol: str) -> dict:
     ac = arctic_client()
     lib = ac.get_library(library)
-    desc = lib.get_description(symbol)
+    with span("arcticdb.describe", **_attrs("describe", library, symbol)):
+        desc = lib.get_description(symbol)
     return {
         "library": library,
         "symbol": symbol,
@@ -89,9 +104,12 @@ def fetch_bars(
     ac = arctic_client()
     lib = ac.get_library(library)
     date_range = (pd.Timestamp(start), pd.Timestamp(end))
-    item = lib.read(symbol, date_range=date_range, columns=columns, lazy=False)
-    assert isinstance(item, adb.VersionedItem)
-    df = item.data
+    with span("arcticdb.read", **_attrs("read", library, symbol)) as read_span:
+        item = lib.read(symbol, date_range=date_range, columns=columns, lazy=False)
+        assert isinstance(item, adb.VersionedItem)
+        df = item.data
+        if read_span is not None and read_span.is_recording():
+            read_span.set_attribute("arcticdb.rows", len(df))
     if frequency:
         df = df.resample(frequency).last().dropna(how="all")
     resampled = False
