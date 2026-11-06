@@ -25,6 +25,7 @@ from tradingo_mcp import (
     risk,
     runner,
 )
+from tradingo_mcp.telemetry import traced_tool
 
 MAX_BYTES = int(os.environ.get("TP_MCP_MAX_BYTES", str(2 * 1024 * 1024)))
 
@@ -84,6 +85,18 @@ mcp = FastMCP(
 # ---------------------------------------------------------------------------
 # data tools
 # ---------------------------------------------------------------------------
+
+
+# Every tool call becomes an ``mcp.tool <name>`` span (no-op without OpenTelemetry).
+_register_tool = mcp.tool
+
+
+def _traced_tool(*targs: Any, **tkwargs: Any) -> Any:
+    register = _register_tool(*targs, **tkwargs)
+    return lambda fn: register(traced_tool(fn))
+
+
+mcp.tool = _traced_tool  # type: ignore[method-assign,assignment]
 
 
 @mcp.tool()
