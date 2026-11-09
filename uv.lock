@@ -3102,8 +3102,8 @@ wheels = [
 
 [[package]]
 name = "research-catalog"
-version = "0.1.1.dev14+g8cb875c6a"
-source = { git = "ssh://git@github.com/tradingo-libraries/research-catalog.git?branch=main#8cb875c6ae4b0af07e6438c66aaa2196ae20e36f" }
+version = "0.1.1.dev52+g067080ca0"
+source = { git = "ssh://git@github.com/tradingo-libraries/research-catalog.git?branch=main#067080ca06ddad33ceae94629ddc2627757548fb" }
 dependencies = [
     { name = "alembic" },
     { name = "fsspec" },

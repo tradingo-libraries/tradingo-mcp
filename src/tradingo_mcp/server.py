@@ -845,6 +845,61 @@ def literature_paper(ref: str) -> dict:
 
 @mcp.tool()
 @_capped
+def literature_read(
+    ref: str, section: str | None = None, max_chars: int = 20000
+) -> dict:
+    """Read a paper's full text (the current parse), whole or one section.
+
+    ref: as for literature_paper. section: a section id or title fragment such as "results"
+    or "data" (case-insensitive; subsections are included); omit it for the abstract and
+    every section. The result lists every section (id, title, size) so you can follow up with
+    a narrower read. Text is cut at max_chars (``truncated`` says whether it was); ask for a
+    section to read further into a long paper. A paper without parsed text returns an error.
+    """
+    return literature.literature_read(ref, section=section, max_chars=max_chars)
+
+
+@mcp.tool()
+@_capped
+def literature_studies(
+    mechanism: list[str] | None = None,
+    asset_class: list[str] | None = None,
+    data_frequency: list[str] | None = None,
+    holding_days_min: int | None = None,
+    holding_days_max: int | None = None,
+    sample_start_before: str | None = None,
+    out_of_sample: bool | None = None,
+    sort: str = "reported_sharpe",
+    limit: int = 50,
+) -> dict:
+    """Compare what papers report: one row per extracted strategy study.
+
+    Use for questions like "compare reported Sharpe and cost assumptions across commodity
+    trend-following papers": mechanism=["time_series_momentum"], asset_class=["commodities"].
+    Filters take catalogue or research-bank vocabulary values (an unknown value returns the
+    valid list). data_frequency: tick, intraday, daily, weekly, monthly, quarterly, annual.
+    holding_days_min / holding_days_max: some holding period in trading days within the bound.
+    sample_start_before: YYYY-MM-DD. out_of_sample: true for held-out or live results only.
+    sort: reported_sharpe (default, best first), cost_assumption_bp, sample_start or year.
+    Figures are machine-extracted from the paper text and each is backed by a quote:
+    literature_paper(paper_id) shows the quotes, literature_read the context. Missing keys
+    mean the paper did not state the value. sharpe_is_net says whether costs were deducted.
+    """
+    return literature.literature_studies(
+        mechanism=mechanism,
+        asset_class=asset_class,
+        data_frequency=data_frequency,
+        holding_days_min=holding_days_min,
+        holding_days_max=holding_days_max,
+        sample_start_before=sample_start_before,
+        out_of_sample=out_of_sample,
+        sort=sort,
+        limit=limit,
+    )
+
+
+@mcp.tool()
+@_capped
 def literature_stats() -> dict:
     """Literature catalogue size by relevance, archived documents, pipeline backlog, last discovery."""
     return literature.literature_stats()
