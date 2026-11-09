@@ -8,7 +8,13 @@ import pytest
 
 from tradingo_mcp import server
 
-TOOLS = {"literature_search", "literature_paper", "literature_stats"}
+TOOLS = {
+    "literature_search",
+    "literature_paper",
+    "literature_stats",
+    "literature_read",
+    "literature_studies",
+}
 
 
 def test_tools_registered():
@@ -40,6 +46,33 @@ def test_paper_and_stats_delegate(monkeypatch):
     monkeypatch.setattr(server.literature, "literature_stats", lambda: {"papers": 1})
     assert server.literature_paper("doi:10.1/x") == {"ref": "doi:10.1/x"}
     assert server.literature_stats() == {"papers": 1}
+
+
+def test_read_and_studies_pass_arguments_through(monkeypatch):
+    seen = {}
+
+    def fake_read(ref, **kw):
+        seen["read"] = (ref, kw)
+        return {"ref": ref}
+
+    def fake_studies(**kw):
+        seen["studies"] = kw
+        return {"total": 0, "items": []}
+
+    monkeypatch.setattr(server.literature, "literature_read", fake_read)
+    monkeypatch.setattr(server.literature, "literature_studies", fake_studies)
+    assert server.literature_read("arxiv:2401.01234", section="results") == {
+        "ref": "arxiv:2401.01234"
+    }
+    assert seen["read"] == (
+        "arxiv:2401.01234",
+        {"section": "results", "max_chars": 20000},
+    )
+    server.literature_studies(mechanism=["time_series_momentum"], out_of_sample=True)
+    assert seen["studies"]["mechanism"] == ["time_series_momentum"]
+    assert seen["studies"]["out_of_sample"] is True
+    assert seen["studies"]["sort"] == "reported_sharpe"
+    assert seen["studies"]["limit"] == 50
 
 
 def test_bad_input_surfaces_as_error():
