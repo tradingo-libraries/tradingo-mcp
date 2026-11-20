@@ -253,3 +253,5 @@ airflow-build-dockerfile*
 data/
 
 config/variables.json
+
+.claude/worktrees
